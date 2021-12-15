@@ -56,12 +56,14 @@
     </div>
 
     <div class="movie-content">
-        {% for title, poster in movie_cards if not movie_cards.hidden %}
-        <div class="card" style="width: 15rem;" title="{{title}}" onclick="recommendcard(this)">
+        {% for title, poster, movieId in movie_cards if not movie_cards.hidden %}
+        <div class="card" style="width: 15rem;" title="{{title}}">
             <div class="imghvr">
                 <img class="card-img-top" height="360" width="240" alt="{{title}} - poster" src={{poster}}>
                 <figcaption class="fig">
-                    <button class="card-btn btn btn-danger"> Click Me </button>
+                    <a href="/movie/{{user}}/{{movieId}}">
+                        <button class="card-btn btn btn-danger"> Click Me </button>
+                    </a>
                 </figcaption>
             </div>
             <div class="card-body">

@@ -1,14 +1,8 @@
 from flask import Flask, render_template, redirect, url_for, request
 from poster_title import getMovieTuplte
+import json
  
 app = Flask(__name__)
-
-def getMovieTitle():
-    genre_cols = [
-    "genre_unknown", "Action", "Adventure", "Animation", "Children", "Comedy",
-    "Crime", "Documentary", "Drama", "Fantasy", "Film-Noir", "Horror",
-    "Musical", "Mystery", "Romance", "Sci-Fi", "Thriller", "War", "Western"]
-    movies_cols = ['movie_id', 'title', 'release_date', "video_release_date", "imdb_url"] + genre_cols
  
 @app.route('/')
 def welcome():
@@ -34,12 +28,29 @@ def login():
     return render_template('login.html', error=error)
 
 @app.route('/movie/<user>', methods=["POST", "GET"])
-def movie(user=None):
+def movie(user=None, movie=None):
     if request.method == "GET":
         movieList = getMovieTuplte([0, 1, 2, 3, 4, 5, 6])
-        # movieList = [("https://images-na.ssl-images-amazon.com/images/M/MV5BMDU2ZWJlMjktMTRhMy00ZTA5LWEzNDgtYmNmZTEwZTViZWJkXkEyXkFqcGdeQXVyNDQ2OTk4MzI@..jpg", "toy story")]
-        return render_template('home.html', movie_cards=movieList)
+        return render_template('home.html', movie_cards=movieList, user=user)
 
+
+@app.route('/movie/<user>/<movie>', methods=["POST", "GET"])
+def watchMovie(user=None, movie=None):
+    if request.method == "GET":
+        movieList = []
+        movieList.append(int(movie))
+        movieInfors = getMovieTuplte(movieList)
+        for movieInfor in movieInfors:
+            title, url, idM = movieInfor
+        return render_template('watchMovie.html', title=title, urlimg=url, user=user, movie=movie)
+
+@app.route('/rate', methods=["POST"])
+def rateUp():
+    rating = request.form['rating']
+    user = request.form['user']
+    movie = request.form['movie']
+    print(user, movie, rating)
+    return render_template('login.html')
 
  
  
