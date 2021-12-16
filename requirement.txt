@@ -1,3 +1,7 @@
 flask
 numpy
 pandas
+matplotlib
+tensorflow-cpu
+sklearn
+scipy

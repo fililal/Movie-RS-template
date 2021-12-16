@@ -1,8 +1,10 @@
 from flask import Flask, render_template, redirect, url_for, request
 from poster_title import getMovieTuplte
+import engine
 import json
  
 app = Flask(__name__)
+model = engine.process()
  
 @app.route('/')
 def welcome():
@@ -21,7 +23,7 @@ def login():
     if request.method == 'POST':
         user = request.form['username']
         password = request.form['password']
-        if request.form['username'] != 'admin' or request.form['password'] != 'admin':
+        if request.form['password'] != 'admin':
             error = 'Invalid Credentials. Please try again.'
         else:
             return redirect(url_for('movie', user=user))
@@ -30,7 +32,8 @@ def login():
 @app.route('/movie/<user>', methods=["POST", "GET"])
 def movie(user=None, movie=None):
     if request.method == "GET":
-        movieList = getMovieTuplte([0, 1, 2, 3, 4, 5, 6])
+        recList = model.recommend(int(user))
+        movieList = getMovieTuplte(recList)
         return render_template('home.html', movie_cards=movieList, user=user)
 
 
@@ -49,7 +52,8 @@ def rateUp():
     rating = request.form['rating']
     user = request.form['user']
     movie = request.form['movie']
-    print(user, movie, rating)
+    # print(user, movie, rating)
+    model.addRating(user=int(user), movie=int(movie), rating=int(rating))
     return render_template('login.html')
 
  
