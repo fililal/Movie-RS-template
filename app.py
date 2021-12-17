@@ -56,6 +56,14 @@ def rateUp():
     model.addRating(user=int(user), movie=int(movie), rating=int(rating))
     return render_template('login.html')
 
+@app.route('/search/<user>', methods=["POST"])
+def search(user=None):
+    # result = request.form['searchResults']
+    # print(result)
+    if request.method == "POST":
+        print(request.form['searchResults'])
+        return redirect(url_for('watchMovie', user=int(user), movie=0))
+
  
  
 if __name__ == '__main__':
