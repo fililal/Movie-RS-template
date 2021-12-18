@@ -44,7 +44,13 @@
                     style="background-color: #ffffff;border-color:#ffffff;width: 60%;color: #181818"
                     required="required" value="{{request.form.searchResults}}">
                 <script>
-                    autocomplete(document.getElementById("tags"), films);
+                    const hiddenID=document.createElement("input")
+                    const tags=document.getElementById("tags")
+                    hiddenID.id="hiddenID"
+                    hiddenID.type="hidden"
+                    hiddenID.value=films.indexOf(tags.value)
+                    tags.parentNode.appendChild(hiddenID)
+                    autocomplete(document.getElementById("tags"),films,hiddenID);
                 </script>
 
 
