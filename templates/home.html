@@ -42,13 +42,15 @@
 
                 <input type="text" id="tags" name="searchResults" class="movie form-control" placeholder="Enter the Movie Name"
                     style="background-color: #ffffff;border-color:#ffffff;width: 60%;color: #181818"
-                    required="required" value="{{request.form.searchResults}}">
+                    required="required" value="">
                 <script>
                     const hiddenID=document.createElement("input")
                     const tags=document.getElementById("tags")
                     hiddenID.id="hiddenID"
                     hiddenID.type="hidden"
                     hiddenID.value=films.indexOf(tags.value)
+                    hiddenID.name="movieId"
+                    hiddenID.class="movie form-control"
                     tags.parentNode.appendChild(hiddenID)
                     autocomplete(document.getElementById("tags"),films,hiddenID);
                 </script>

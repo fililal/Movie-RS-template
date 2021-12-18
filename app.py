@@ -61,8 +61,9 @@ def search(user=None):
     # result = request.form['searchResults']
     # print(result)
     if request.method == "POST":
-        print(request.form['searchResults'])
-        return redirect(url_for('watchMovie', user=int(user), movie=0))
+        # print(request.form['searchResults'])
+        movieId = int(request.form['movieId']) - 1
+        return redirect(url_for('watchMovie', user=int(user), movie=movieId))
 
  
  
