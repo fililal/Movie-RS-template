@@ -24,7 +24,7 @@
 
     <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js" type="text/javascript"></script>
-    <script src="/static/rating.js"></script>
+    <!-- <script src="/static/rating.js"></script> -->
 
 </head>
 
@@ -62,6 +62,21 @@
         <input type="hidden" id="user-data" value={{user}}>
         <input type="hidden" id="movie-data" value={{movie}}>
     </div>
+    <script>
+        $(function () {
+            $(".star").on("click", function () { //RATING PROCESS
+                var rate = $(this).attr("id");
+                var user = $("#user-data").attr("value");
+                var movie = $("#movie-data").attr("value");
+                console.log(rate)
+                $.ajax({
+                    type: "POST",
+                    url: "/rate",
+                    data: { 'rating': rate, 'user': user, 'movie': movie }
+                })
+            });
+        })
+    </script>
 </body>
 
 </html>
