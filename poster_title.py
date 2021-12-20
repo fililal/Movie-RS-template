@@ -15,7 +15,8 @@ def getMovieTuplte(movieIdList):
     Nmovie = 1682
     movieTPList = []
     mana = pd.read_csv('temp.csv')
+    df = pd.read_csv('movielens_posters.csv')
     for n in movieIdList:
-        temp = (mana['movie_title'][n], mana['movie_url'][n], mana['movie_id'][n] - 1)
+        temp = (mana['movie_title'][n], df['url'][n], mana['movie_id'][n] - 1)
         movieTPList.append(temp)
     return movieTPList
