@@ -21,6 +21,8 @@ def process():
   ratings_base = pd.read_csv('ua.base', sep = '\t', names = r_cols, encoding='latin-1')
   del ratings_base['unix_timestamp']
   rate = ratings_base.to_numpy()
+  rate[:, :2] -= 1
+  # print(rate[0, :])
   sim_matrix = pd.read_csv('sim_matrix.csv').to_numpy()
   U = pd.read_csv('User_profile.csv').to_numpy()
   I = pd.read_csv('Item_profile.csv').to_numpy()

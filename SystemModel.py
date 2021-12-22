@@ -14,7 +14,15 @@ class ModelProcess(object):
         self.I = I
 
     def addRating(self, user, movie, rating):
-        self.rate = np.concatenate((self.rate, np.array([[user, movie, rating]])))
+        #if user has watched movie
+        #we change it else add it to rate data
+        idx = np.where(self.rate[:, 0] == user)[0].astype(np.int32)
+        index = np.where(self.rate[idx, 1] == movie)[0].astype(np.int32)
+        if index.shape[0] == 0:
+            self.rate = np.concatenate((self.rate, np.array([[user, movie, rating]])))
+        else :
+            # print("Update rating from", self.rate[index, 2], "to ", rating)
+            self.rate[index, 2] = rating
         self.reorderRating()
         self.normalize()
         self.update_model(user=user)
