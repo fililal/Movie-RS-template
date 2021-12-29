@@ -12,6 +12,7 @@ class ModelProcess(object):
         self.sim_matrix = similarity_matrix
         self.U = U
         self.I = I
+        self.change = 0
 
     def addRating(self, user, movie, rating):
         #if user has watched movie
@@ -25,7 +26,10 @@ class ModelProcess(object):
             self.rate[index, 2] = rating
         self.reorderRating()
         self.normalize()
-        self.update_model(user=user)
+        self.change += 1
+        if self.change == 30:
+            self.change = 0
+            self.update_model(user=user)
 
     # def recommend(self, user):
     #     user_sim = self.sim_matrix[user].argsort(axis=0)[-11:-1]
@@ -67,6 +71,7 @@ class ModelProcess(object):
         index = np.array(pre_recom).argsort(axis=0)
         order_re_list = np.array(pre_recom)[index[-Nrecommend:, 1], 0].astype(np.int32).tolist()
         order_re_list.reverse()
+        print(order_re_list)
         return order_re_list
 
     def normalize(self):
