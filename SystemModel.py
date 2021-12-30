@@ -3,48 +3,113 @@ from sklearn.metrics.pairwise import cosine_similarity
 import tensorflow as tf
 
 class ModelProcess(object):
-    def __init__(self, rate_data, Nuser, Nmovie, similarity_matrix=None, U=None, I=None):
+    def __init__(self, rate_data, Nuser, Nmovie, similarity_matrix=None, user_profile=None, item_profile=None, Nfeature=50):
         self.rate = rate_data
         self.Nuser = Nuser
         self.Nmovie = Nmovie
         self.Nfeature = 50
-
         self.sim_matrix = similarity_matrix
-        self.U = U
-        self.I = I
-        self.change = 0
-
-    def addRating(self, user, movie, rating):
-        #if user has watched movie
-        #we change it else add it to rate data
-        idx = np.where(self.rate[:, 0] == user)[0].astype(np.int32)
-        index = np.where(self.rate[idx, 1] == movie)[0].astype(np.int32)
-        if index.shape[0] == 0:
-            self.rate = np.concatenate((self.rate, np.array([[user, movie, rating]])))
-        else :
-            # print("Update rating from", self.rate[index, 2], "to ", rating)
-            self.rate[index, 2] = rating
-        self.reorderRating()
         self.normalize()
-        self.change += 1
-        if self.change == 30:
-            self.change = 0
-            self.update_model(user=user)
+        self.rating_sparse_tensor = self.making_sparse_tensor()
+        self.lda = 0.1
+        self.lr = 0.5
+        self.opt = tf.keras.optimizers.Adam(learning_rate=self.lr)
+        self.flag = 0
+        if not (user_profile.all() == None):
+            self.U = tf.Variable(initial_value=user_profile, name='user_profile')
+            self.I = tf.Variable(initial_value=item_profile, name='item_profile')
+        else:
+            self.U = tf.Variable(initial_value=tf.random.truncated_normal([self.Nuser, self.Nfeature]), name='user_profile')
+            self.I = tf.Variable(initial_value=tf.random.truncated_normal([self.Nfeature, self.Nmovie]), name='movie_profile')
+            self.train()
 
-    # def recommend(self, user):
-    #     user_sim = self.sim_matrix[user].argsort(axis=0)[-11:-1]
-    #     user_list = self.rate[np.where(self.rate[:, 0] == user)[0].astype(np.int32), 1]
-    #     recommend_list = []
-    #     predict_for_user = np.matmul(self.U[user, :], self.I[:])
-    #     for n in user_sim:
-    #         index = np.where(self.rate[:, 0] == n)[0].astype(np.int32)
-    #         sim_list = self.rate[index, 1]
-    #         for item in sim_list:
-    #             if item not in user_list:
-    #                 if predict_for_user[item] > 0:
-    #                     recommend_list.append(item)
-    
-    #     return recommend_list
+        if similarity_matrix.all == None:
+            self.make_sim_matrix()
+        else:
+            self.sim_matrix = similarity_matrix
+
+        print(self.loss_function())
+
+    ##Function for train
+    def normalize(self):
+        rate_copy = self.rate.copy().astype(np.float)
+        mu = np.zeros((self.Nuser, ))
+        userCol = self.rate[:, 0]
+        for n in range(self.Nuser):
+            idx = np.where(userCol == n)[0].astype(np.int32)
+            if idx.shape[0] == 0:
+                continue
+            item_idx = self.rate[idx, 1]
+            ratings = self.rate[idx, 2]
+            m = np.mean(ratings)
+            mu[n] = m
+            rate_copy[idx, 2] = ratings - mu[n]
+        self.rate_normalize = rate_copy
+        self.mu = mu
+  
+    def reorderRating(self):
+        temp = self.rate.astype(np.int32)
+        index = np.lexsort((temp[:, 1], temp[:, 0]))
+        self.rate = self.rate[index]
+
+    def making_sparse_tensor(self):
+        rate_sparse = tf.sparse.SparseTensor(indices=self.rate_normalize[:, :2],
+                                            values=self.rate_normalize[:, 2],
+                                            dense_shape=[self.Nuser, self.Nmovie])
+        return rate_sparse
+
+    def make_sim_matrix(self):
+        self.sim_matrix = cosine_similarity(self.U, self.U)
+
+
+    ##Training
+    @tf.function
+    def loss_function(self):
+        rate_predict = tf.gather_nd(tf.matmul(self.U, self.I),
+                                    self.rating_sparse_tensor.indices)
+        loss = tf.losses.mean_squared_error(self.rating_sparse_tensor.values, rate_predict)
+        return loss
+
+    @tf.function
+    def loss_regulization(self):
+        regularization_loss = self.lda * (
+            tf.reduce_sum(self.U*self.U)/self.U.shape[0] + tf.reduce_sum(self.I*self.I)/self.I.shape[1])
+        loss = self.loss_function() + regularization_loss
+        return loss
+
+    def train(self):
+        Niter = 100
+        current_loss = self.loss_regulization()
+        for iter in range(Niter + 1):
+            self.opt.minimize(self.loss_regulization, var_list=[self.U, self.I])
+            if iter % 10 == 0:
+                print("Iteration ", iter,"Loss is: ", self.loss_function())
+            if abs(current_loss - self.loss_regulization()) < 1e-5:
+                print("Stop at iteration:", iter, "Loss is: ", self.loss_function())
+                break
+      
+            current_loss = self.loss_regulization()
+        print(self.loss_function())
+
+
+    ##System Function
+    def addRating(self, user, movie, rating):
+        ##Kiểm tra xem user đã xem movie chưa
+        idx = np.where(self.rate[:, 0] == user)[0].astype(np.int32)
+        idx = np.where(self.rate[idx, 1] == movie)[0]
+        if idx.shape[0] == 0:
+            self.rate = np.concatenate((self.rate, np.array([[user, movie, rating]])))
+            self.reorderRating()
+            self.normalize()
+        else:
+            self.rate[idx, 2] = rating
+
+        self.flag += 1
+        print(self.flag)
+        if self.flag == 30:
+            self.train()
+            self.make_sim_matrix()
+            self.flag = 0
 
     def recommend(self, user, Nrecommend = 30):
         user_sim = self.sim_matrix[user].argsort(axis=0)[-10:-1]
@@ -73,40 +138,7 @@ class ModelProcess(object):
         order_re_list.reverse()
         print(order_re_list)
         return order_re_list
-
-    def normalize(self):
-        rate_copy = self.rate.copy().astype(np.float)
-        mu = np.zeros((self.Nuser, ))
-        userCol = self.rate[:, 0]
-        for n in range(self.Nuser):
-            idx = np.where(userCol == n)[0].astype(np.int32)
-            if idx.shape[0] == 0:
-                continue
-        item_idx = self.rate[idx, 1]
-        ratings = self.rate[idx, 2]
-        m = np.mean(ratings)
-        mu[n] = m
-        rate_copy[idx, 2] = ratings - mu[n]
-        self.rate_normalize = rate_copy
-        self.mu = mu
     
-    def reorderRating(self):
-        temp = self.rate.astype(np.int32)
-        index = np.lexsort((temp[:, 1], temp[:, 0]))
-        self.rate = self.rate[index]
 
-    def update_model(self, user):
-        u = self.U[user, :]
-        lr = 0.1
-        maxIter = 100
-        idx = np.where(self.rate[:, 0] == user)[0].astype(np.int32)
-        s = idx.shape[0]
-        movie_idx, rating_idx = self.rate_normalize[idx, 1], self.rate_normalize[idx, 2]
-        Ix = self.I[:, movie_idx.astype(np.int32)]
-        lr_s = lr / s
-        for iter in range(maxIter):
-          grad = np.matmul(u, Ix).T - rating_idx
-          grad = np.matmul(Ix, grad.reshape(s, 1)).T
-          u = (u - grad * lr_s).reshape((50, ))
-        self.U[user, :] = u
-        self.sim_matrix = cosine_similarity(self.U)
+
+
