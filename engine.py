@@ -25,6 +25,3 @@ def process():
   return ModelProcess(rate_data=rate, Nuser=Nuser, Nmovie=Nmovie,
                       similarity_matrix=sim_matrix,
                       user_profile=U, item_profile=I)
-
-
-  
