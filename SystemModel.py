@@ -94,7 +94,7 @@ class ModelProcess(object):
 
     ##System Function
     def addRating(self, user, movie, rating):
-        ##Kiểm tra xem user đã xem movie chưa
+        # Kiểm tra xem user đã xem movie chưa
         idx = np.where(self.rate[:, 0] == user)[0].astype(np.int32)
         idx = np.where(self.rate[idx, 1] == movie)[0]
         if idx.shape[0] == 0:
@@ -105,10 +105,31 @@ class ModelProcess(object):
             self.rate[idx, 2] = rating
 
     def recommend(self, user, Nrecommend = 30):
+        if user > 942:
+            #Gợi ý những bộ phim mới
+            # print('Hello, world')
+            hot = np.where(self.rate[:, 2] == 5)[0].astype(np.int32)
+            movie = self.rate[hot, 1].tolist()
+            hot = list(set(self.rate[hot, 1].tolist()))
+            tmp = []
+            recommend_list = []
+            for i in hot:
+                tmp.append((i, movie.count(i)))
+            tmp.sort(key=lambda x:-x[1])
+            for i in tmp[:30]:
+                recommend_list.append(i[0])
+            # print(recommend_list)
+            return recommend_list
+
+        # Cho người dùng đã tồn tại trong hệ thống   
+
+        # Lấy 10 user tương đồng nhất
         user_sim = self.sim_matrix[user].argsort(axis=0)[-10:-1]
         re_list = []
         user_list = self.rate[[np.where(self.rate[:, 0] == user)[0].astype(np.int32)], 1]
   
+        # Từ những bộ phim mà người dùng tương đồng thích (đã xem và đánh giá cao)
+        # đưa vào đề xuất cho người dùng
         for user_re in user_sim.tolist():
             idx = np.where(self.rate[:, 0] == user_re)[0].astype(np.int32)
             for sample in idx.tolist():
@@ -121,7 +142,9 @@ class ModelProcess(object):
 
         pre_recom = []
         predict_matrix = tf.matmul(self.U, self.I).numpy()
-        #ranking recommend list
+
+        # Xếp hạng dựa trên việc dự đoán rating các bộ phim gợi ý
+        # và đưa ra 30 bộ phim có dự đoán cao nhất
         for movie in re_list:
             rate_pre = predict_matrix[user, movie]
             pre_recom.append((movie, rate_pre))
