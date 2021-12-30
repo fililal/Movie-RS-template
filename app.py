@@ -8,6 +8,7 @@ model = engine.process()
  
 @app.route('/')
 def welcome():
+    model.train()
     return redirect('/login')
  
  

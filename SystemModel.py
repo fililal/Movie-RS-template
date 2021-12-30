@@ -104,13 +104,6 @@ class ModelProcess(object):
         else:
             self.rate[idx, 2] = rating
 
-        self.flag += 1
-        print(self.flag)
-        if self.flag == 30:
-            self.train()
-            self.make_sim_matrix()
-            self.flag = 0
-
     def recommend(self, user, Nrecommend = 30):
         user_sim = self.sim_matrix[user].argsort(axis=0)[-10:-1]
         re_list = []
